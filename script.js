@@ -5,11 +5,15 @@
  **************/
 
 function updateCoffeeView(coffeeQty) {
-  // your code here
+  const coffeCounter = document.getElementById('coffee_counter');
+
+  coffeCounter.innerText = coffeeQty;
 }
 
 function clickCoffee(data) {
-  // your code here
+  data.coffee++;
+  updateCoffeeView(data.coffee);
+  renderProducers(data);
 }
 
 /**************
@@ -17,15 +21,24 @@ function clickCoffee(data) {
  **************/
 
 function unlockProducers(producers, coffeeCount) {
-  // your code here
+  producers.forEach((producer) => {
+    if (coffeeCount >= producer.price / 2) {
+      producer.unlocked = true;
+    }
+  });
 }
 
 function getUnlockedProducers(data) {
-  // your code here
+  return data.producers.filter((producer) => producer.unlocked);
 }
 
 function makeDisplayNameFromId(id) {
-  // your code here
+  return id
+    .split('_')
+    .map(
+      (element) => element.charAt(0).toUpperCase() + element.slice(1)
+    )
+    .join(' ');
 }
 
 // You shouldn't need to edit this function-- its tests should pass once you've written makeDisplayNameFromId
@@ -50,11 +63,21 @@ function makeProducerDiv(producer) {
 }
 
 function deleteAllChildNodes(parent) {
-  // your code here
+  while (parent.firstChild) {
+    parent.removeChild(parent.firstChild);
+  }
 }
 
 function renderProducers(data) {
-  // your code here
+  unlockProducers(data.producers, data.coffee);
+  let producerContainer = document.getElementById(
+    'producer_container'
+  );
+  deleteAllChildNodes(producerContainer);
+
+  getUnlockedProducers(data).forEach((producer) => {
+    producerContainer.appendChild(makeProducerDiv(producer));
+  });
 }
 
 /**************
@@ -62,31 +85,55 @@ function renderProducers(data) {
  **************/
 
 function getProducerById(data, producerId) {
-  // your code here
+  return data.producers.find(
+    (producer) => producerId === producer.id
+  );
 }
 
 function canAffordProducer(data, producerId) {
-  // your code here
+  return getProducerById(data, producerId).price <= data.coffee;
 }
 
 function updateCPSView(cps) {
-  // your code here
+  return (document.querySelector('#cps').innerText = cps);
 }
 
 function updatePrice(oldPrice) {
-  // your code here
+  return Math.floor(oldPrice * 1.25);
 }
 
 function attemptToBuyProducer(data, producerId) {
-  // your code here
+  if (canAffordProducer(data, producerId)) {
+    let producer = getProducerById(data, producerId);
+
+    producer.qty++;
+    data.coffee -= producer.price;
+
+    producer.price = updatePrice(producer.price);
+    data.totalCPS += producer.cps;
+
+    return true;
+  } else return false;
 }
 
 function buyButtonClick(event, data) {
-  // your code here
+  if (event.target.tagName === 'BUTTON') {
+    const producerId = event.target.id.slice(4);
+    const result = attemptToBuyProducer(data, producerId);
+    if (!result) {
+      window.alert('Not enough coffee!');
+    } else {
+      renderProducers(data);
+      updateCoffeeView(data.coffee);
+      updateCPSView(data.totalCPS);
+    }
+  }
 }
 
 function tick(data) {
-  // your code here
+  data.coffee += data.totalCPS;
+  updateCoffeeView(data.coffee);
+  renderProducers(data);
 }
 
 /*************************
@@ -114,8 +161,10 @@ if (typeof process === 'undefined') {
 
   // Add an event listener to the container that holds all of the producers
   // Pass in the browser event and our data object to the event listener
-  const producerContainer = document.getElementById('producer_container');
-  producerContainer.addEventListener('click', event => {
+  const producerContainer = document.getElementById(
+    'producer_container'
+  );
+  producerContainer.addEventListener('click', (event) => {
     buyButtonClick(event, data);
   });
 
@@ -142,6 +191,6 @@ else if (process) {
     updatePrice,
     attemptToBuyProducer,
     buyButtonClick,
-    tick
+    tick,
   };
 }
